@@ -14,49 +14,6 @@ from requests import get
 from score_logger import ScoreLogger
 from statistics import mean 
 
-
-"""
-TO DO LIST:
-
-0L) aggiungere payload al dataset
-
-1) la power del GW va cambiata in GWresource       ---DONE---
-
-2) legare proporzionalmente la duration di esecuzione del task al payload, in attesa del payload facciamo su SF  ---DONE---
-
-3) inserire i GW presenti nel messaggio nello stato della Qtable  ---DONE---
-
-3) diversificare la struttura che contiene il costo, cioè noi dobbiamo tenere traccia del costo dovuto al payload che rappresenta quanto dura il processamento
-    e il costo dovuto al GW selezionato. In altre parole se seleziono un GW di quelli non presenti nel messaggio allora ho un costo più alto. ---DONE---
-
-4) costo di selezione del GW, GW dentro il vettore del messaggio hanno costo BASSO, tutti gli altri GW hanno costo ALTO  ---DONE---
-
-5) inserimento di una variabile che tiene conto della somma dei costi, si chiama TOTAL_COST, a questa varibile dobbiamo aggiungere man mano il costo assegnato al payload 
-    e il costo di assegnamento del GW (alto o basso).  ---DONE---
-
-6) fissando numero di ED a 3000, fissando risorse a 300, produrre un grafico che traccia il TOTAL_COST nell'esecuzione di 6 esperimenti, ognuno a SF fisso, significa, 
-    un esperimento a SF=7 e trovi un valore di TC, un esperimento a SF8 e trovi un'altro valore di TC e così via e poi li plotti
-
-7) fissando risorse a 300, fissando SF a 12, produrre un grafico che traccia il TC nell'esecuzione di 6 esperimenti, ognuno con un numero di ED diverso, significa, 
-    un esperimento con 500 ED (quando ricevi messaggio lo processi solo se devaddre < 500) e ti calcoli il TC, 
-    un esperimento con 1000 ED (quando ricevi messaggio lo processi solo se devaddre < 1000) e ti calcoli il TC, 
-    fai questa cosa per 500, 1000, 1500 .. 3000, ottieni 6 TC e il plotti 
-
-8) fissando numerodo di ED a 3000, fissando SF a 12, produrre un grafico che traccia il TC nell'esecuzione di 6 esperimenti, ognuno con un numero di risorsa disponibile GW diversa, 
-    50, 100, 150, 200, 250, 300 e il plotti 
-
-9) gestire il caso in cui le risorse su tutti i GW sono esaurite in modo da assegnare a stati di questo tipo delle reward molto molto basse, costo molto alto. ---DONE---
-
-fino a qui, le fai sia per dataset 2GW, 20GW e 50GW
-
-3.bis) va estesa la struttura di stato in cui oltre alle risorse c'è anche un altro vettore che tiene conto della distanza in km (senza decimali), 
-    tra il GW e il sensor che ha trasmesso il messaggio.  ---DONE---
-
-10) possibile considerare GW con potenza di processing diversificata, consideriamolo dopo
-
-"""
-
-
 # Setup MQTT Broker connection details
 broker = 'localhost'
 port = 1883
@@ -70,7 +27,7 @@ alpha = 0.1
 gamma = 0.95  
 epsilon = 0.1  
 # Set the number and resources of gateways to 2, 20, or 50
-number_of_gateways = 2
+number_of_gateways = 50
 GWResource = 300
 gateway_powers = {i: GWResource for i in range(number_of_gateways)}
 
@@ -201,6 +158,20 @@ def get_best_near_gw(near_gw):
         return -1
     else:
         return gw
+    
+def choose_random_gw(payload_cost):
+    random_gw = np.random.choice(range(number_of_gateways))
+    if gateway_powers[random_gw] < payload_cost:
+        return -1
+    else:
+        return random_gw
+    """
+    if not possible_actions:
+        return -1
+    else:
+        return np.random.choice(possible_actions)
+    """
+
 
 def get_best_action(state, possible_actions):
    
@@ -285,9 +256,11 @@ def intelligentJointAlgorithm(msg):
     #print(f"Current state: {current_state}")
     possible_actions = get_possible_actions(payload_cost)
 
-    #selected_gateway = get_action(current_state, possible_actions)
+    selected_gateway = get_action(current_state, possible_actions)
 
-    selected_gateway = get_best_near_gw(near_gw)
+    #selected_gateway = get_best_near_gw(near_gw)
+
+    #selected_gateway = choose_random_gw(payload_cost)
 
     if selected_gateway == -1:
         reward = -20

@@ -7,9 +7,9 @@ import os
 import csv
 import numpy as np
 
-
 class ScoreLogger:
     def __init__(self, name, slices):
+        self.lost_messages = 0
         self.scores = deque(maxlen=None)
         self.name = name
         self.csv = f'./scores/{name}_scores.csv'
@@ -22,6 +22,9 @@ class ScoreLogger:
             os.remove(self.csv)
 
     def add_score(self, score, episode):
+        if score == 5000:
+            self.lost_messages += 1
+        
         self._save_csv(self.csv, score)
         if episode % self.slices == 0 and episode != 0:
             self._save_png(input_path=self.csv,
@@ -55,10 +58,11 @@ class ScoreLogger:
         plt.title(self.name)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
-
+        
         if show_legend:
             plt.legend(loc="upper left")
-
+        
+        plt.figtext(0.2, 0.01, f"Lost messages: {self.lost_messages}", ha='center', va='bottom')
         plt.savefig(output_path, bbox_inches="tight")
         plt.close()
 

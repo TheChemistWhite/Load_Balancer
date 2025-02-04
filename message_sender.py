@@ -9,7 +9,7 @@ from paho.mqtt import client as mqtt_client
 
 
 # Set the number of gateways to 2, 20, or 50
-number_of_gateways = 2
+number_of_gateways = 50
 
 if number_of_gateways == 2:
     dataset_folder = './roma-2-gw/output/merged_tx_rx'
