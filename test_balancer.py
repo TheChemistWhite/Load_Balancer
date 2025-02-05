@@ -8,6 +8,8 @@ import math
 import numpy as np
 from collections import defaultdict
 import threading
+import pickle
+import os
 
 from requests import get
 
@@ -53,6 +55,14 @@ elif number_of_gateways == 50:
 else:
     raise Exception("Invalid number of gateways")
 
+def save_variable(table, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(table, f)
+
+def load_variable(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
+
 def haversine(lat1, lon1, lat2, lon2):
     # Earth's radius in kilometers
     R = 6371.0
@@ -85,7 +95,16 @@ print("The sorted list of gateways MAC IDs: ", gateways)
 gateways_positions = pd.read_csv(gateways_positions_file)
 #print(gateways_positions)
 
-q_table = defaultdict(lambda: defaultdict(float))
+class DefaultDict(defaultdict):
+        def __missing__(self, key):
+            self[key] = defaultdict(float)
+            return self[key]
+
+if os.path.exists('q_table.pkl'):
+    q_table = load_variable('q_table.pkl')
+else:
+    q_table = DefaultDict(defaultdict)
+
 active_tasks = {}
 
 def reset_payload_cost(gateway_idx, payload_cost, mex_idx):
@@ -282,6 +301,7 @@ def intelligentJointAlgorithm(msg):
     #print(f"Next state: {next_state}")
     next_possible_actions = get_possible_actions(payload_cost)
     update(current_state, selected_gateway, reward, next_state, next_possible_actions)
+    save_variable(q_table, 'q_table.pkl')
 
     if number_of_gateways == 50:
         life_time = (sf + payload_cost)
