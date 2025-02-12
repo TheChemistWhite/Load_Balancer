@@ -21,11 +21,12 @@ class ScoreLogger:
         if os.path.exists(self.csv):
             os.remove(self.csv)
 
-    def add_score(self, score, episode):
-        if score == 5000:
+    def add_score(self, score, dist, assigned, selected_gw_power, reward, gw_powers, episode):
+        if score == 50:
             self.lost_messages += 1
         
-        self._save_csv(self.csv, score)
+        self._save_csv(self.csv, score, dist, assigned, selected_gw_power, reward)
+        self._save_csv_powers(f'./scores/{self.name}_gw_powers.csv', gw_powers)
         if episode % self.slices == 0 and episode != 0:
             self._save_png(input_path=self.csv,
                         output_path=self.png,
@@ -34,7 +35,7 @@ class ScoreLogger:
                         show_legend=True)
         self.scores.append(score)
         mean_score = mean(self.scores)
-        print(f'Cost: (min: {min(self.scores)}, avg: {mean_score}, max: {max(self.scores)}) Message: {episode}\n')
+        #print(f'Cost: (min: {min(self.scores)}, avg: {mean_score}, max: {max(self.scores)}) Message: {episode}\n')
 
     def _save_png(self, input_path, output_path, x_label, y_label, show_legend):
         x = []
@@ -53,7 +54,7 @@ class ScoreLogger:
         #plt.subplots()
         #plt.plot(x, y, marker='o', linestyle='dashed', label="score per message")
 
-        plt.plot(x, y, marker='o', linestyle="dashed", label="average")
+        plt.plot(x, y, linestyle="solid", label="average")
 
         plt.title(self.name)
         plt.xlabel(x_label)
@@ -66,7 +67,16 @@ class ScoreLogger:
         plt.savefig(output_path, bbox_inches="tight")
         plt.close()
 
-    def _save_csv(self, path, score):
+    def _save_csv(self, path, score, dist, assigned, selected_gw_power, reward):
+        if not os.path.exists(path):
+            with open(path, "w", newline=''):
+                pass
+        scores_file = open(path, "a", newline='')
+        with scores_file:
+            writer = csv.writer(scores_file)
+            writer.writerow([score, dist, assigned, selected_gw_power, reward])
+
+    def _save_csv_powers(self, path, score):
         if not os.path.exists(path):
             with open(path, "w", newline=''):
                 pass
